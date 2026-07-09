@@ -1,0 +1,29 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd ~/docker-cloud-vm-deployment
+            git pull origin main
+            docker stop portfolio-container || true
+            docker rm portfolio-container || true
+            docker build -t portfolio-app .
+            docker run -d --restart always --name portfolio-container -p 8080:80 portfolio-app
